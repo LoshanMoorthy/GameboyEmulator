@@ -3,14 +3,7 @@
 #include "definitions.h"
 #include "files.h"
 #include "log.h"
-
-class Address {
-public:
-	Address(u16 address): addr(address) {}
-	u16 value() const { return addr; }
-private:
-	u16 addr;
-};
+#include "address.h"
 
 Cartridge::Cartridge(std::string filename) {
 	auto rom_data = read_bytes(filename);

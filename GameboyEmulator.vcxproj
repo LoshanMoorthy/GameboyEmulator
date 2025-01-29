@@ -128,19 +128,35 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="address.h" />
+    <ClInclude Include="bitwise.h" />
+    <ClInclude Include="boot.h" />
     <ClInclude Include="cartridge.h" />
     <ClInclude Include="cartridge_info.h" />
+    <ClInclude Include="cli.h" />
+    <ClInclude Include="cpu.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="files.h" />
     <ClInclude Include="log.h" />
+    <ClInclude Include="mmu.h" />
+    <ClInclude Include="op_cycles.h" />
+    <ClInclude Include="op_mapping.h" />
+    <ClInclude Include="op_names.h" />
+    <ClInclude Include="register.h" />
     <ClInclude Include="string.h" />
+    <ClInclude Include="video.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="address.cpp" />
     <ClCompile Include="cartridge.cc" />
     <ClCompile Include="cartridge_info.cpp" />
+    <ClCompile Include="cli.cpp" />
+    <ClCompile Include="cpu.cpp" />
     <ClCompile Include="files.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mmu.cpp" />
+    <ClCompile Include="opcodes.cpp" />
+    <ClCompile Include="register.cpp" />
     <ClCompile Include="string.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

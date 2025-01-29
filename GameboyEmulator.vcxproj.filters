@@ -36,6 +36,36 @@
     <ClInclude Include="address.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mmu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="boot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="video.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="register.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cli.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="op_cycles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="op_names.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bitwise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="op_mapping.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="log.cpp">
@@ -54,6 +84,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="address.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mmu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="register.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cli.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="opcodes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
