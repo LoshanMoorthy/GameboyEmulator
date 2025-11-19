@@ -2,6 +2,7 @@
 
 #include "bitwise.h"
 #include "log.h"
+#include "mmu.h"
 
 #include <cstdlib>
 

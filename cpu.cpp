@@ -6,11 +6,14 @@
 #include "op_names.h"
 #include "bitwise.h"
 #include "log.h"
+#include "mmu.h"
+#include "gameboy.h"
 
 using bitwise::compose_bytes;
 
-CPU::CPU(MMU* inMMU, Options& inOptions)
-	: mmu(inMMU)
+CPU::CPU(Gameboy& inGb, MMU* inMMU, Options& inOptions)
+	: gb(inGb)
+	, mmu(inMMU)
 	, options(inOptions)
 	, af(a, f)
 	, bc(b, c)

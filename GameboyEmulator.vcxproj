@@ -133,9 +133,12 @@
     <ClInclude Include="cartridge.h" />
     <ClInclude Include="cartridge_info.h" />
     <ClInclude Include="cli.h" />
+    <ClInclude Include="color.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="definitions.h" />
     <ClInclude Include="files.h" />
+    <ClInclude Include="framebuffer.h" />
+    <ClInclude Include="gameboy.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="mmu.h" />
     <ClInclude Include="op_cycles.h" />
@@ -143,6 +146,7 @@
     <ClInclude Include="op_names.h" />
     <ClInclude Include="register.h" />
     <ClInclude Include="string.h" />
+    <ClInclude Include="tile.h" />
     <ClInclude Include="video.h" />
   </ItemGroup>
   <ItemGroup>
@@ -150,14 +154,19 @@
     <ClCompile Include="cartridge.cc" />
     <ClCompile Include="cartridge_info.cpp" />
     <ClCompile Include="cli.cpp" />
+    <ClCompile Include="color.cpp" />
     <ClCompile Include="cpu.cpp" />
     <ClCompile Include="files.cpp" />
+    <ClCompile Include="framebuffer.cpp" />
+    <ClCompile Include="gameboy.cc" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mmu.cpp" />
     <ClCompile Include="opcodes.cpp" />
     <ClCompile Include="register.cpp" />
     <ClCompile Include="string.cpp" />
+    <ClCompile Include="tile.cc" />
+    <ClCompile Include="video.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

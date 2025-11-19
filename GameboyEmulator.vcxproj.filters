@@ -66,6 +66,18 @@
     <ClInclude Include="op_mapping.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="color.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameboy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="log.cpp">
@@ -102,6 +114,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="opcodes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="color.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tile.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="video.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gameboy.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

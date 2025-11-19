@@ -3,10 +3,12 @@
 #include <cstdint>
 
 #include "definitions.h"
-#include "mmu.h"
 #include "register.h"
 #include "cli.h"
 #include "address.h"
+
+class Gameboy;
+class MMU;
 
 /*
     Enums for conditions like NZ, Z, NC, C
@@ -43,7 +45,7 @@ namespace rst {
 
 class CPU {
 public:
-    CPU(MMU* inMMU, Options& inOptions);
+    CPU(Gameboy& inGb, MMU* inMMU, Options& inOptions);
 
     void setMMUPointer(MMU* mmu) { this->mmu = mmu; }
 
@@ -83,6 +85,7 @@ private:
 
     MMU* mmu;
     Options& options;
+    Gameboy& gb;
 
     // states
     bool interrupts_enabled = false;

@@ -2,31 +2,78 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "cartridge_info.h"
 #include "definitions.h"
+#include "address.h"
+#include "register.h"
 
 class Cartridge {
 public:
-	Cartridge(std::string filename);
+	Cartridge(std::vector<u8> rom_data,
+			  std::vector<u8> ram_data,
+			  std::unique_ptr<CartridgeInfo> info);
+	virtual ~Cartridge() = default;
 
-	u8 read(const class Address& address) const;
+	virtual u8 read(const Address& address) const = 0;
+	virtual void write(const Address& address, u8 value) = 0;
 
-	std::string game_title() const;
+	const std::vector<u8>& get_cartridge_ram() const;
 
+protected:
+	std::vector<u8> rom;
+	std::vector<u8> ram;
+	std::unique_ptr<CartridgeInfo> cartridge_info;
+};
+
+/*
+	Factory func that creates the right MBC type
+	from the given ROM and optional RAM data.
+*/
+std::shared_ptr<Cartridge> get_cartridge(const std::vector<u8>& rom_data,
+										 const std::vector<u8>& ram_data = {});
+
+class NoMBC : public Cartridge {
+public:
+	NoMBC(std::vector<u8> rom_data,
+		  std::vector<u8> ram_data,
+		  std::unique_ptr<CartridgeInfo> info);
+
+	u8 read(const Address& address) const override;
+	void write(const Address& address, u8 value) override;
+};
+
+class MBC1 : public Cartridge {
+public:
+	MBC1(std::vector<u8> rom_data,
+		 std::vector<u8> ram_data,
+		 std::unique_ptr<CartridgeInfo> info);
+
+	u8 read(const Address& address) const override;
+	void write(const Address& address, u8 value) override;
 private:
-	std::vector<u8> data;
+	int current_rom_bank = 1;
+	int current_ram_bank = 0;
+	bool ram_enabled = false;
+	
+	// Mode: false => ROM banking mode, true => RAM banking mode
+	bool banking_mode_select = false;
+};
 
-	// Metadata
-	CartridgeType type;
-	ROMSize rom_size;
-	RAMSize ram_size;
-	std::string license_code;
-	u8 version;
+class MBC3 : public Cartridge {
+public:
+	MBC3(std::vector<u8> rom_data,
+		 std::vector<u8> ram_data,
+		 std::unique_ptr<CartridgeInfo> info);
 
-	bool supports_cgb = false;
-	bool supports_sgb = false;
+	u8 read(const Address& address) const override;
+	void write(const Address& address, u8 value) override;
+private:
+	int current_rom_bank = 1;
+	int current_ram_bank = 0;
+	bool ram_enabled = false;
 
-	// Header has 'destination code' (Jap or Non-Jap)
-	// TODO: Implement for next iteration
+	// MBC3 can also map RTC registers instead of RAM banks
+	bool using_rtc = false;
 };

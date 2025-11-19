@@ -7,6 +7,7 @@
 #include "address.h"
 
 class CPU;
+class Gameboy;
 class Video;
 
 /*
@@ -17,7 +18,7 @@ class Video;
 
 class MMU {
 public:
-	MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo);
+	MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo, Gameboy& inGb);
 
 	u8 read(const class Address& address) const;
 	void write(const class Address& address, u8 byte);
@@ -38,6 +39,7 @@ private:
 	Cartridge& cartridge;
 	CPU& cpu;
 	Video& video;
+	Gameboy& gameboy;
 
 	std::vector<u8> memory;
 };

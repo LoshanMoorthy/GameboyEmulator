@@ -1,33 +1,50 @@
 #include <iostream>
-
-#include "cpu.h"
-#include "video.h"
-#include "mmu.h"
-#include "cartridge.h"
+#include <vector>
+#include "gameboy.h"
+#include "cli.h"       
+#include "files.h"      
 #include "log.h"
+#include "framebuffer.h"
+
+static bool my_should_close_callback() {
+    static int counter = 0;
+    return (++counter > 60);
+}
+
+static void my_vblank_callback(const FrameBuffer& fb) {
+    static int frameCount = 0;
+    frameCount++;
+    log_info("VBlank callback! frame = %d", frameCount);
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " path/to/rom.gb\n";
+        std::cerr << "Usage: " << argv[0] << " <romfile.gb>\n";
+        return 1;
+    }
+    std::string rom_path = argv[1];
+
+    Options options;
+    options.trace = true;
+    options.disable_logs = false;
+
+    auto rom_char = read_bytes(rom_path);
+    if (rom_char.empty()) {
+        std::cerr << "Failed to read ROM from " << rom_path << "\n";
         return 1;
     }
 
-    Options opts;
-    opts.trace = true;
+    std::vector<u8> rom_data(rom_char.begin(), rom_char.end());
 
-    log_set_level(LogLevel::Trace);
+    std::vector<u8> save_data;
 
-    Cartridge cart(argv[1]);
+    Gameboy gb(rom_data, options, save_data);
 
-    CPU cpu(nullptr, opts);
-    Video dummyVideo; 
-    MMU mmu(cart, cpu, dummyVideo);
-    cpu.setMMUPointer(&mmu);
+    gb.run(
+        my_should_close_callback,
+        my_vblank_callback
+    );
 
-    for (int i = 0; i < 200; i++) {
-        Cycles c = cpu.tick();
-        std::cout << "CPU tick => " << c.cycles << " cycles\n";
-    }
-
+    std::cout << "Exiting emulator\n";
     return 0;
 }
