@@ -10,104 +10,85 @@ MMU::MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo, Gameboy& inGb)
     , cpu(inCPU)
     , video(inVideo)
     , gameboy(inGb) {
-    // Allocate the full 64KB address space with 0s.
     memory.resize(0x10000, 0);
 }
 
 u8 MMU::read(const Address& address) const {
     u16 addr = address.value();
 
-    // 0x0000..0x7FFF
     if (addr < 0x8000) {
-        // TODO: boot_rom_active
         return cartridge.read(address);
     }
-    // 0x8000..0x9FFF is VRAM, for now memory[]:
     if (addr < 0xA000) {
         return memory_read(address);
     }
-    // 0xA000..0xBFFF is "External RAM" in the Cartridge:
     if (addr < 0xC000) {
         return memory_read(address);
     }
-    // 0xC000..0xDFFF is work RAM:
     if (addr < 0xE000) {
         return memory_read(address);
     }
-    // 0xE000..0xFDFF is the "echo" of C000..DDFF. For now:
     if (addr < 0xFE00) {
         return memory_read(Address(addr - 0x2000));
     }
-    // 0xFE00..0xFE9F = OAM
     if (addr < 0xFEA0) {
         return memory_read(address);
     }
     if (addr < 0xFF00) {
         return 0xFF;
     }
-    // 0xFF00..0xFF7F = I/O Registers
     if (addr < 0xFF80) {
         return read_io(address);
     }
-    // 0xFF80..0xFFFE = High (Zero-page) RAM
     if (addr < 0xFFFF) {
         return memory_read(address);
     }
     // 0xFFFF = Interrupt Enable register
-    return memory_read(address);
+    return cpu.interrupt_enabled.value();
 }
 
 void MMU::write(const Address& address, u8 byte) {
     u16 addr = address.value();
 
-    // 0x0000..0x7FFF is ROM => writes often go to MBC for bank-switching, etc.
     if (addr < 0x8000) {
-        log_warn("Attempted write to ROM area 0x%04X = 0x%02X", addr, byte);
+        cartridge.write(address, byte);
         return;
     }
     else if (addr < 0xA000) {
-        // VRAM
         memory_write(address, byte);
         return;
     }
     else if (addr < 0xC000) {
-        // Cartridge (External) RAM region
         memory_write(address, byte);
         return;
     }
     else if (addr < 0xE000) {
-        // Work RAM
         memory_write(address, byte);
         return;
     }
     else if (addr < 0xFE00) {
-        // Echo RAM
         memory_write(Address(addr - 0x2000), byte);
         return;
     }
     else if (addr < 0xFEA0) {
-        // OAM
         memory_write(address, byte);
         return;
     }
     else if (addr < 0xFF00) {
-        // Unusable
-        log_warn("Write to unusable area 0x%04X = 0x%02X", addr, byte);
+        // Unusable region - ignore silently
         return;
     }
     else if (addr < 0xFF80) {
-        // I/O
         write_io(address, byte);
         return;
     }
     else if (addr < 0xFFFF) {
-        // High RAM
         memory_write(address, byte);
         return;
     }
     else {
-        // 0xFFFF = IE register
-        memory_write(address, byte);
+        // 0xFFFF = Interrupt Enable register
+        cpu.interrupt_enabled.set(byte);
         return;
     }
 }
@@ -119,6 +100,13 @@ bool MMU::boot_rom_active() const {
 u8 MMU::read_io(const Address& address) const {
     u16 addr = address.value();
 
+    // Joypad - return 0xFF
+    if (addr == 0xFF00) return 0xFF;
+
+    // Interrupt Flag
+    if (addr == 0xFF0F) return cpu.interrupt_flag.value();
+
+    // LCD registers
     if (addr >= 0xFF40 && addr <= 0xFF4B) {
         switch (addr) {
         case 0xFF40: return video.lcd_control.value();
@@ -141,13 +129,21 @@ u8 MMU::read_io(const Address& address) const {
 
 void MMU::write_io(const Address& address, u8 byte) {
     u16 addr = address.value();
+
+    // Interrupt Flag
+    if (addr == 0xFF0F) {
+        cpu.interrupt_flag.set(byte);
+        return;
+    }
+
+    // LCD registers
     if (addr >= 0xFF40 && addr <= 0xFF4B) {
         switch (addr) {
         case 0xFF40: video.lcd_control.set(byte); break;
         case 0xFF41: video.lcd_status.set(byte); break;
         case 0xFF42: video.scroll_y.set(byte); break;
         case 0xFF43: video.scroll_x.set(byte); break;
-        case 0xFF44: video.line.set(0); break; 
+        case 0xFF44: video.line.set(0); break;
         case 0xFF45: video.ly_compare.set(byte); break;
         case 0xFF46: video.dma_transfer.set(byte); break;
         case 0xFF47: video.bg_palette.set(byte); break;

@@ -70,22 +70,7 @@ u8 NoMBC::read(const Address& address) const {
 	return 0xFF;
 }
 
-void NoMBC::write(const Address& address, u8 value) {
-	const u16 addr = address.value();
-
-	// ROM area => No effect for ROM-Only
-	if (addr < 0x80000) {
-		return;
-	}
-
-	// 0xA000..0xBFFF => ext ram
-	else if (addr >= 0xA000 && addr < 0xC000) {
-		size_t offset = addr - 0xA000;
-		if (offset < ram.size()) {
-			ram[offset] = value;
-		}
-	}
-}
+void NoMBC::write(const Address& address, u8 value) { }
 
 MBC1::MBC1(std::vector<u8> rom_data,
 		   std::vector<u8> ram_data,

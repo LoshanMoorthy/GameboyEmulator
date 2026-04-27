@@ -22,6 +22,16 @@ CPU::CPU(Gameboy& inGb, MMU* inMMU, Options& inOptions)
 		pc.set(0x0100);
 		sp.set(0xFFFE);
 
+		// Post-boot-ROM register state
+		a.set(0x01);
+		f.set(0xB0);
+		b.set(0x00);
+		c.set(0x13);
+		d.set(0x00);
+		e.set(0xD8);
+		h.set(0x01);
+		l.set(0x4D);
+
 		log_debug("CPU constructed: PC=0x%04X, SP=0x%04X", pc.value(), sp.value());
 }
 
@@ -29,12 +39,17 @@ Cycles CPU::tick() {
 	log_debug("CPU tick: PC=0x%04X", pc.value());
 	handle_interrupts();
 
+	if (halted) {
+		return Cycles(4);
+	}
+
 	u16 old_pc = pc.value();
 	u8 opcode = get_byte_from_pc();
-
-	log_debug("Fetched opcode=0x%02X from PC=0x%04X", opcode, old_pc);
-
 	return execute_opcode(opcode, old_pc);
+}
+
+void CPU::opcode_halt() {
+	halted = true;
 }
 
 Cycles CPU::execute_opcode(u8 opcode, u16 opcode_pc) {
@@ -48,14 +63,12 @@ Cycles CPU::execute_opcode(u8 opcode, u16 opcode_pc) {
 }
 
 void CPU::handle_interrupts() {
-	if (!interrupts_enabled) return;
-
-	// Which bits are fired? IF and IE
 	u8 fired = interrupt_flag.value() & interrupt_enabled.value();
 	if (!fired) return;
+	halted = false;
+	if (!interrupts_enabled) return;
 
 	stack_push(pc);
-
 	if (handle_interrupt(0, interrupts::vblank,      fired)) return;
 	if (handle_interrupt(1, interrupts::lcdc_status, fired)) return;
 	if (handle_interrupt(2, interrupts::timer,       fired)) return;
@@ -92,14 +105,17 @@ u16 CPU::get_word_from_pc() {
 // GB grows stack downward from high addresses to low
 void CPU::stack_push(const WordValue& value) {
 	sp.decrement();
-	mmu->write(Address(sp.value()), value.low());
-	sp.decrement();
 	mmu->write(Address(sp.value()), value.high());
+	sp.decrement();
+	mmu->write(Address(sp.value()), value.low());
 }
 void CPU::stack_pop(WordValue& value) {
 	u8 low = mmu->read(Address(sp.value()));
 	sp.increment();
+	
 	u8 high = mmu->read(Address(sp.value()));
+	sp.increment();
+
 	u16 combined = compose_bytes(high, low);
 	value.set(combined);
 }

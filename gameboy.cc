@@ -36,9 +36,9 @@ void Gameboy::run(
 }
 
 void Gameboy::tick() {
+    log_debug("Gameboy::tick() start, elapsed=%u", elapsed_cycles);
     auto cycles = cpu.tick();
     elapsed_cycles += cycles.cycles;
-
     video.tick(cycles);
 }
 

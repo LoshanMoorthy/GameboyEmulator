@@ -348,13 +348,6 @@ void CPU::opcode_jr(Condition condition) {
     }
 }
 
-
-/* HALT */
-void CPU::opcode_halt() {
-    log_debug("HALT encountered - ignoring for now");
-}
-
-
 /* LD */
 void CPU::opcode_ld(ByteRegister& reg) {
     u8 n = get_byte_from_pc();

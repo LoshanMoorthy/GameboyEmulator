@@ -90,6 +90,7 @@ private:
     // states
     bool interrupts_enabled = false;
     bool branch_taken       = false;
+    bool halted             = false;
 
     u8 get_byte_from_pc();
     s8 get_signed_byte_from_pc();

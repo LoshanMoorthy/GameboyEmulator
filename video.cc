@@ -13,18 +13,18 @@ Video::Video(Gameboy& inGb)
     : gb(inGb)
     , buffer(GAMEBOY_WIDTH, GAMEBOY_HEIGHT) {
     // Initialize registers to 0 if needed
-    lcd_control.set(0);
-    lcd_status.set(0);
-    scroll_y.set(0);
-    scroll_x.set(0);
-    line.set(0);
-    ly_compare.set(0);
-    dma_transfer.set(0);
+    lcd_control.set(0x91);
+    lcd_status.set(0x85);
+    scroll_y.set(0x00);
+    scroll_x.set(0x00);
+    line.set(0x00);
+    ly_compare.set(0x00);
+    dma_transfer.set(0x00);
     bg_palette.set(0xFC);         
     sprite_palette_0.set(0xFF);
     sprite_palette_1.set(0xFF);
-    window_y.set(0);
-    window_x.set(0);
+    window_y.set(0x00);
+    window_x.set(0x00);
 }
 
 // Called after each CPU instruction. 'cycles' = how many cycles that instruction used.
@@ -105,7 +105,9 @@ bool Video::sprites_enabled() const { return check_bit(lcd_control.value(), 1); 
 bool Video::bg_enabled() const { return check_bit(lcd_control.value(), 0); }
 
 void Video::write_scanline(u8 current_line) {
-    if (!display_enabled()) return;
+    if (!display_enabled()) {
+        return;
+    }
 
     if (bg_enabled()) {
         draw_bg_line(current_line);

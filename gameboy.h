@@ -18,7 +18,14 @@ using vblank_callback_t = std::function<void(const FrameBuffer&)>;
 using should_close_callback_t = std::function<bool()>;
 
 class Gameboy {
+private:
+    std::shared_ptr<Cartridge> cartridge;
+
 public:
+    CPU cpu;
+    Video video;
+    MMU mmu;
+
     Gameboy(const std::vector<u8>& cartridge_data, 
             Options& options,
             const std::vector<u8>& save_data = {});
@@ -30,16 +37,8 @@ public:
 
     auto get_cartridge_ram() const -> const std::vector<u8>&;
 
-    CPU cpu;
-    Video video;
-    MMU mmu;
-
 private:
     void tick();
-
-    std::shared_ptr<Cartridge> cartridge;
-
     uint elapsed_cycles = 0;
-
     should_close_callback_t should_close_callback;
 };
