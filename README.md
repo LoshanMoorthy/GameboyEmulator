@@ -1,45 +1,64 @@
-# Game Boy Emulator (WIP)
-
-A work-in-progress **Nintendo Game Boy emulator** written in modern C++.
-
-I started this project to learn how the real hardware works - CPU, memory map and the PPU.
-
-> ⚠️ Status: Experimental / incomplete.  
-> Work in progress – not a playable emulator yet.
-
----
-
-## 🎯 Goals
-
-- Emulate the original Game Boy hardware at a low level
-- Implement the LR35902 CPU (registers, flags, opcodes, timing)
-- Model the full 64KB memory map through an MMU
-- Implement scanline-based video rendering (background, window, sprites)
-- Learn how real hardware coordinates CPU, PPU, interrupts and timing
-
-## What it does right now
-
-- Loads a ROM from disk
-- Implements the LR35902 CPU with:
-  - 8-bit/16-bit registers
-  - Flags (Z, N, H, C)
-  - A large part of the instruction set (ADD/ADC/SUB/SBC, AND/OR/XOR, BIT/SET/RES, shifts/rotates, JP/JR/CALL/RET, etc.)
-- Has an MMU that models the 64KB address space:
-  - Cartridge ROM, work RAM, echo RAM, OAM, high RAM
-  - Basic handling of LCD I/O registers (0xFF40–0xFF4B)
-- A simple PPU/Video system:
-  - Tracks LCD modes (OAM, VRAM, HBlank, VBlank)
-  - Increments LY per scanline
-  - Renders the background line-by-line using tile maps and tile data into a `FrameBuffer`
-  - Calls a VBlank callback once a frame is ready
+# Game Boy Emulator
  
-## Building & running
-
-The project is set up as a Visual Studio C++ project.
-
-1. Clone the repo and open the solution in Visual Studio.
-2. Build it (Debug or Release).
-3. Run it with a ROM file:
-
-```bash
+A Nintendo Game Boy emulator written from scratch in C++.
+ 
+![Tetris running on the emulator](Animation.gif)
+ 
+Tetris is fully playable. The project implements the original Game Boy hardware at a low level - CPU, memory, PPU, interrupts, and cartridge banking - without using any emulation libraries.
+ 
+---
+ 
+## Features
+ 
+- **SM83 CPU** - full instruction set including all opcodes, flags, interrupts, halt, and EI/DI timing
+- **PPU** - scanline-accurate background, window, and sprite rendering with palette support
+- **MBC1, MBC3, MBC5** cartridge support - ROM banking, RAM banking, enabling games like Zelda: Link's Awakening
+- **OAM DMA** transfers
+- **Timer** with interrupt generation (DIV, TIMA, TMA, TAC)
+- **Joypad** input with interrupt support
+- **60fps** frame timing via SDL2
+---
+ 
+## Controls
+ 
+| Key | Game Boy Button |
+|-----|----------------|
+| Arrow Keys | D-Pad |
+| Z | A |
+| X | B |
+| Enter | Start |
+| Left/Right Shift | Select |
+ 
+---
+ 
+## Building
+ 
+Requires Visual Studio and SDL2.
+ 
+1. Clone the repo and open `GameboyEmulator.sln`
+2. Set build to **Release** for full speed
+3. Run with a ROM:
+```
 GameboyEmulator.exe path\to\rom.gb
+```
+ 
+---
+ 
+## How it works
+ 
+The emulator models the original Game Boy hardware cycle by cycle:
+ 
+- The **SM83 CPU** runs one instruction at a time - fetch, decode, execute, repeat. Flags and registers behave exactly like the real chip
+- The **MMU** sits in the middle of everything and figures out where a read or write actually needs to go - ROM, WRAM, VRAM, OAM, I/O, HRAM...
+- The **PPU** draws the screen one scanline at a time, cycling through OAM scan → pixel transfer → HBlank, then VBlank once all 144 lines are done. The finished frame gets pushed to SDL2
+- **Interrupts** work properly - VBlank, LCD STAT, Timer and Joypad all go through the IE/IF registers and wake the CPU at the right time
+- **Cartridge mappers** (MBC1/3/5) handle bank switching so bigger games can actually load their data
+---
+ 
+## TODO
+ 
+- [ ] Sound (APU — 4 channel audio)
+- [ ] Save states (F5/F8)
+- [ ] Fullscreen toggle (F11)
+- [ ] Game Boy Color (CGB) support
+- [ ] More MBC types
