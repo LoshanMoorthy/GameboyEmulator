@@ -14,7 +14,7 @@ Color FrameBuffer::get_pixel(uint x, uint y) const {
 }
 
 void FrameBuffer::reset() {
-    // Reset all pixels to white (or black, your choice)
+    // Reset all pixels to white (or black, your choice :D)
     for (auto& pixel : buffer) {
         pixel = Color::White;
     }

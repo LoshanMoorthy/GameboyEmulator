@@ -267,12 +267,13 @@ void CPU::opcode_dec(Address&& addr) {
 /* DI */
 void CPU::opcode_di() {
     interrupts_enabled = false;
+    ei_pending = false;
 }
 
 
 /* EI */
 void CPU::opcode_ei() {
-    interrupts_enabled = true;
+    ei_pending = true;
 }
 
 

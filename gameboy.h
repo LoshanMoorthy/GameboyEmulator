@@ -7,6 +7,8 @@
 #include "cpu.h"         
 #include "video.h"       
 #include "mmu.h"  
+#include "joypad.h"
+#include "timer.h"
 
 #include <memory>
 #include <functional>
@@ -24,6 +26,8 @@ private:
 public:
     CPU cpu;
     Video video;
+    Joypad joypad;
+    Timer timer;
     MMU mmu;
 
     Gameboy(const std::vector<u8>& cartridge_data, 

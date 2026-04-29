@@ -1,16 +1,19 @@
-#include <iostream>
-#include <vector>
-#define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
 #include "gameboy.h"
 #include "cli.h"
 #include "files.h"
 #include "log.h"
 #include "framebuffer.h"
+#include "joypad.h"
+
+#include <iostream>
+#include <vector>
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
 
 static const int GB_WIDTH = 160;
 static const int GB_HEIGHT = 144;
 static const int SCALE = 3; // 480x432 window
+static Gameboy* gb_ptr = nullptr;
 
 // GB Color enum -> ARGB pixel
 static uint32_t color_to_pixel(Color c) {
@@ -33,16 +36,32 @@ static bool should_close_callback() {
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) quit = true;
         if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) quit = true;
+
+        if (gb_ptr && (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP)) {
+            bool pressed = e.type == SDL_KEYDOWN;
+
+            switch (e.key.keysym.sym) {
+            case SDLK_RIGHT:  gb_ptr->joypad.set_button(Joypad::Button::Right, pressed); break;
+            case SDLK_LEFT:   gb_ptr->joypad.set_button(Joypad::Button::Left, pressed); break;
+            case SDLK_UP:     gb_ptr->joypad.set_button(Joypad::Button::Up, pressed); break;
+            case SDLK_DOWN:   gb_ptr->joypad.set_button(Joypad::Button::Down, pressed); break;
+
+            case SDLK_z:      gb_ptr->joypad.set_button(Joypad::Button::A, pressed); break;
+            case SDLK_x:      gb_ptr->joypad.set_button(Joypad::Button::B, pressed); break;
+            case SDLK_RSHIFT: gb_ptr->joypad.set_button(Joypad::Button::Select, pressed); break;
+            case SDLK_RETURN:
+                gb_ptr->joypad.set_button(Joypad::Button::Start, pressed);
+                break;
+            }
+        }
     }
+
     return quit;
 }
 
 static void vblank_callback(const FrameBuffer& fb) {
     static int frame_count = 0;
     frame_count++;
-    if (frame_count == 1) {
-        fprintf(stderr, "First frame! Check window.\n");
-    }
     static uint32_t pixels[GB_WIDTH * GB_HEIGHT];
     for (int y = 0; y < GB_HEIGHT; y++) {
         for (int x = 0; x < GB_WIDTH; x++) {
@@ -105,6 +124,7 @@ int main(int argc, char* argv[]) {
     std::vector<u8> rom_data(rom_char.begin(), rom_char.end());
     std::vector<u8> save_data;
     Gameboy gb(rom_data, options, save_data);
+    gb_ptr = &gb;
 
     gb.run(should_close_callback, vblank_callback);
 

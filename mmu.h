@@ -5,6 +5,8 @@
 #include "definitions.h"
 #include "cartridge.h"
 #include "address.h"
+#include "joypad.h"
+#include "timer.h"
 
 class CPU;
 class Gameboy;
@@ -18,7 +20,7 @@ class Video;
 
 class MMU {
 public:
-	MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo, Gameboy& inGb);
+	MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo, Joypad& inJoypad, Timer& inTimer, Gameboy& inGb);
 
 	u8 read(const class Address& address) const;
 	void write(const class Address& address, u8 byte);
@@ -39,6 +41,8 @@ private:
 	Cartridge& cartridge;
 	CPU& cpu;
 	Video& video;
+	Joypad& joypad;
+	Timer& timer;
 	Gameboy& gameboy;
 
 	std::vector<u8> memory;

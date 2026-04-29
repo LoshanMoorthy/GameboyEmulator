@@ -32,66 +32,62 @@ void Video::tick(Cycles cycles) {
     cycle_counter += cycles.cycles;
 
     switch (current_mode) {
-    case VideoMode::ACCESS_OAM:
-    if (cycle_counter >= CLOCKS_PER_SCANLINE_OAM) {
-        // Switch to ACCESS_VRAM
-        cycle_counter -= CLOCKS_PER_SCANLINE_OAM;
-        current_mode = VideoMode::ACCESS_VRAM;
-        // LCD STAT bits etc.
-    }
-    break;
+        case VideoMode::ACCESS_OAM:
+        if (cycle_counter >= CLOCKS_PER_SCANLINE_OAM) {
+            cycle_counter -= CLOCKS_PER_SCANLINE_OAM;
+            current_mode = VideoMode::ACCESS_VRAM;
+            // Mode 3
+            lcd_status.set((lcd_status.value() & 0xFC) | 0x03);
+        }
+        break;
 
-    case VideoMode::ACCESS_VRAM:
-    if (cycle_counter >= CLOCKS_PER_SCANLINE_VRAM) {
-        // Switch to HBLANK
-        cycle_counter -= CLOCKS_PER_SCANLINE_VRAM;
-        current_mode = VideoMode::HBLANK;
-    }
-    break;
+        case VideoMode::ACCESS_VRAM:
+        if (cycle_counter >= CLOCKS_PER_SCANLINE_VRAM) {
+            cycle_counter -= CLOCKS_PER_SCANLINE_VRAM;
+            current_mode = VideoMode::HBLANK;
+            // Mode 0
+            lcd_status.set((lcd_status.value() & 0xFC) | 0x00);
+        }
+        break;
 
-    case VideoMode::HBLANK: {
-        if (cycle_counter >= CLOCKS_PER_HBLANK) {
-            cycle_counter -= CLOCKS_PER_HBLANK;
+        case VideoMode::HBLANK: {
+            if (cycle_counter >= CLOCKS_PER_HBLANK) {
+                cycle_counter -= CLOCKS_PER_HBLANK;
+                write_scanline(line.value());
+                line.increment();
 
-            write_scanline(line.value());
-
-            line.increment();
-
-            // If LY == 144 => enter VBLANK
-            if (line.value() == 144) {
-                current_mode = VideoMode::VBLANK;
-
-                // set VBlank interrupt bit (0)
-                gb.cpu.interrupt_flag.set_bit_to(0, true);
+                if (line.value() == 144) {
+                    current_mode = VideoMode::VBLANK;
+                    // Mode 1
+                    lcd_status.set((lcd_status.value() & 0xFC) | 0x01);
+                    gb.cpu.interrupt_flag.set_bit_to(0, true);
+                }
+                else {
+                    current_mode = VideoMode::ACCESS_OAM;
+                    // Mode 2
+                    lcd_status.set((lcd_status.value() & 0xFC) | 0x02);
+                }
             }
-            else {
-                // Go back to OAM
-                current_mode = VideoMode::ACCESS_OAM;
+            break;
+        }
+        case VideoMode::VBLANK:
+        if (line.value() >= 144 && line.value() < 154) {
+            if (cycle_counter >= CLOCKS_PER_SCANLINE) {
+                cycle_counter -= CLOCKS_PER_SCANLINE;
+                line.increment();
+
+                if (line.value() > 153) {
+                    line.set(0);
+                    current_mode = VideoMode::ACCESS_OAM;
+                    // Mode 2
+                    lcd_status.set((lcd_status.value() & 0xFC) | 0x02);
+                    write_sprites();
+                    draw();
+                    buffer.reset();
+                }
             }
         }
         break;
-    }
-    case VideoMode::VBLANK:
-    // We stay in VBLANK for 10 lines (144..153) => total 456 * 10 cycles
-    if (line.value() >= 144 && line.value() < 154) {
-        // each line is 456 cycles
-        if (cycle_counter >= CLOCKS_PER_SCANLINE) {
-            cycle_counter -= CLOCKS_PER_SCANLINE;
-            line.increment();
-
-            // If we pass line 153 => wrap to 0
-            if (line.value() > 153) {
-                line.set(0);
-                current_mode = VideoMode::ACCESS_OAM;
-
-                // End of VBlank => we can render the entire frame
-                write_sprites();
-                draw(); // call the final vblank callback
-                buffer.reset();
-            }
-        }
-    }
-    break;
     }
 }
 
@@ -202,16 +198,101 @@ void Video::draw_window_line(uint current_line) {
     }
     uint win_line = current_line - window_y.value();
     if (win_line >= GAMEBOY_HEIGHT) return;
+
+    // window_x register is offset by 7
+    int win_x_offset = (int)window_x.value() - 7;
+
+    const Address TILE_SET_ZERO_ADDRESS = 0x8000;
+    const Address TILE_SET_ONE_ADDRESS  = 0x8800;
+    const Address TILE_MAP_ZERO_ADDRESS = 0x9800;
+    const Address TILE_MAP_ONE_ADDRESS  = 0x9C00;
+
+    bool use_tile_set_zero = bg_window_tile_data();
+    Address tile_set = use_tile_set_zero ? TILE_SET_ZERO_ADDRESS : TILE_SET_ONE_ADDRESS;
+
+    // Window uses specific tile map bit (bit 6 of LCD?)
+    bool use_window_tile_map_one = window_tile_map();
+    Address tile_map = use_window_tile_map_one ? TILE_MAP_ONE_ADDRESS : TILE_MAP_ZERO_ADDRESS;
+
+    for (uint screen_x = 0; screen_x < GAMEBOY_WIDTH; screen_x++) {
+        int win_x = (int)screen_x - win_x_offset;
+        if (win_x < 0) continue;
+
+        uint tile_x = (uint)win_x / 8;
+        uint tile_y = win_line / 8;
+        uint tile_index = tile_y * 32 + tile_x;
+
+        u8 tile_id = gb.mmu.read(tile_map + tile_index);
+        s16 tile_number = use_tile_set_zero ? tile_id : (s8)tile_id + 128;
+
+        Address tile_address = tile_set + (tile_number * 16);
+
+        uint pixel_x = (uint)win_x % 8;
+        uint pixel_y = win_line % 8;
+
+        Tile tile(tile_address, gb.mmu);
+        GBColor colorIdx = tile.get_pixel(pixel_x, pixel_y);
+
+        auto palette = load_palette(bg_palette);
+        auto final_color = get_color_from_palette(colorIdx, palette);
+
+        buffer.set_pixel(screen_x, current_line, final_color);
+    }
 }
 
 void Video::draw_sprite(uint sprite_n) {
     // OAM is at 0xFE00
     Address oam_start = Address(0xFE00 + sprite_n * 4);
 
-    u8 posY = gb.mmu.read(oam_start + 0); // Y pos
-    u8 posX = gb.mmu.read(oam_start + 1); // X pos
+    u8 posY    = gb.mmu.read(oam_start + 0); // Y pos
+    u8 posX    = gb.mmu.read(oam_start + 1); // X pos
     u8 tileNum = gb.mmu.read(oam_start + 2);
-    u8 attr = gb.mmu.read(oam_start + 3);
+    u8 attr    = gb.mmu.read(oam_start + 3);
+
+    // Sprites are offset: posX-8, posY-16
+    int sprite_x = (int)posX - 8;
+    int sprite_y = (int)posY - 16;
+
+    bool tall_sprites = sprite_size(); // bit 2 LCDC: false=8x8, true=8x16
+    uint height = tall_sprites ? 16 : 8;
+    if (tall_sprites) tileNum &= 0xFE; // 8x16: ignore bit 0
+
+    bool flip_x = (attr & 0x20) != 0;
+    bool flip_y = (attr & 0x40) != 0;
+    bool use_pal1 = (attr & 0x10) != 0;
+    bool bg_priority = (attr & 0x80) != 0;
+
+    const ByteRegister& pal_reg = use_pal1 ? sprite_palette_1 : sprite_palette_0;
+    auto palette = load_palette(pal_reg);
+
+    Address tile_address = Address(0x8000 + tileNum * 16);
+    Tile tile(tile_address, gb.mmu, tall_sprites ? 2 : 1);
+
+    for (uint ty = 0; ty < height; ty++) {
+        int screen_y = sprite_y + (int)ty;
+        if (screen_y < 0 || screen_y >= (int)GAMEBOY_HEIGHT) continue;
+
+        uint flipped_y = flip_y ? (height - 1 - ty) : ty;
+
+        for (uint tx = 0; tx < 8; tx++) {
+            int screen_x = sprite_x + (int)tx;
+            if (screen_x < 0 || screen_x >= (int)GAMEBOY_WIDTH) continue;
+
+            uint flipped_x = flip_x ? (7 - tx) : tx;
+
+            GBColor colorIdx = tile.get_pixel(flipped_x, flipped_y);
+            if (colorIdx == GBColor::Color0) continue; // transparent
+
+            // bg_priority: sprite is behind BG colors 1-3
+            if (bg_priority) {
+                Color existing = buffer.get_pixel(screen_x, screen_y);
+                if (existing != Color::White) continue;
+            }
+
+            auto final_color = get_color_from_palette(colorIdx, palette);
+            buffer.set_pixel(screen_x, screen_y, final_color);
+        }
+    }
 }
 
 Palette Video::load_palette(const ByteRegister& palette_reg) {

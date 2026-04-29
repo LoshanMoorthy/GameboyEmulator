@@ -23,6 +23,9 @@ CPU::CPU(Gameboy& inGb, MMU* inMMU, Options& inOptions)
 		sp.set(0xFFFE);
 
 		// Post-boot-ROM register state
+		interrupt_enabled.set(0x00);
+		interrupt_flag.set(0xE1);   
+		interrupts_enabled = false; 
 		a.set(0x01);
 		f.set(0xB0);
 		b.set(0x00);
@@ -36,16 +39,19 @@ CPU::CPU(Gameboy& inGb, MMU* inMMU, Options& inOptions)
 }
 
 Cycles CPU::tick() {
-	log_debug("CPU tick: PC=0x%04X", pc.value());
 	handle_interrupts();
-
-	if (halted) {
-		return Cycles(4);
-	}
+	if (halted) return Cycles(4);
 
 	u16 old_pc = pc.value();
 	u8 opcode = get_byte_from_pc();
-	return execute_opcode(opcode, old_pc);
+	auto result = execute_opcode(opcode, old_pc);
+
+	if (ei_pending) {
+		ei_pending = false;
+		interrupts_enabled = true;
+	}
+	
+	return result;
 }
 
 void CPU::opcode_halt() {

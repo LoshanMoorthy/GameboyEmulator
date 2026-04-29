@@ -89,6 +89,7 @@ private:
 
     // states
     bool interrupts_enabled = false;
+    bool ei_pending         = false;
     bool branch_taken       = false;
     bool halted             = false;
 

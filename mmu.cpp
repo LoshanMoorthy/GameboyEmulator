@@ -5,16 +5,23 @@
 #include "boot.h"
 #include "gameboy.h"
 
-MMU::MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo, Gameboy& inGb)
+MMU::MMU(Cartridge& inCartridge, CPU& inCPU, Video& inVideo, Joypad& inJoypad, Timer& inTimer, Gameboy& inGb)
     : cartridge(inCartridge)
     , cpu(inCPU)
     , video(inVideo)
+    , joypad(inJoypad)
+    , timer(inTimer)
     , gameboy(inGb) {
     memory.resize(0x10000, 0);
 }
 
 u8 MMU::read(const Address& address) const {
     u16 addr = address.value();
+
+    if (addr == 0xFF04) return timer.read_div();
+    if (addr == 0xFF05) return timer.read_tima();
+    if (addr == 0xFF06) return timer.read_tma();
+    if (addr == 0xFF07) return timer.read_tac();
 
     if (addr < 0x8000) {
         return cartridge.read(address);
@@ -101,7 +108,7 @@ u8 MMU::read_io(const Address& address) const {
     u16 addr = address.value();
 
     // Joypad - return 0xFF
-    if (addr == 0xFF00) return 0xFF;
+    if (addr == 0xFF00) return joypad.read();
 
     // Interrupt Flag
     if (addr == 0xFF0F) return cpu.interrupt_flag.value();
@@ -130,6 +137,31 @@ u8 MMU::read_io(const Address& address) const {
 void MMU::write_io(const Address& address, u8 byte) {
     u16 addr = address.value();
 
+    if (addr == 0xFF04) {
+        timer.write_div(byte);
+        return;
+    }
+
+    if (addr == 0xFF05) {
+        timer.write_tima(byte);
+        return;
+    }
+
+    if (addr == 0xFF06) {
+        timer.write_tma(byte);
+        return;
+    }
+
+    if (addr == 0xFF07) {
+        timer.write_tac(byte);
+        return;
+    }
+
+    if (addr == 0xFF00) {
+        joypad.write(byte);
+        return;
+    }
+
     // Interrupt Flag
     if (addr == 0xFF0F) {
         cpu.interrupt_flag.set(byte);
@@ -145,7 +177,15 @@ void MMU::write_io(const Address& address, u8 byte) {
         case 0xFF43: video.scroll_x.set(byte); break;
         case 0xFF44: video.line.set(0); break;
         case 0xFF45: video.ly_compare.set(byte); break;
-        case 0xFF46: video.dma_transfer.set(byte); break;
+        case 0xFF46: video.dma_transfer.set(byte); 
+                     {
+                        u16 src = (u16)byte << 8;
+                        for (int i = 0; i < 160; i++) {
+                            u8 val = read(Address(src + i));
+                            write(Address(0xFE00 + i), val);
+                        }
+                     }
+                     break;
         case 0xFF47: video.bg_palette.set(byte); break;
         case 0xFF48: video.sprite_palette_0.set(byte); break;
         case 0xFF49: video.sprite_palette_1.set(byte); break;
